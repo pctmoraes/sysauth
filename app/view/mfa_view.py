@@ -1,20 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.database.database import get_db
+from fastapi import APIRouter, HTTPException
 from app.controller.mfa_controller import MfaController
+from app.database.schema import MfaSchema
 
-route = APIRouter(prefix='/sysauth')
+mfa_controller = MfaController()
+route = APIRouter(prefix='/sysauth/mfa')
 
-async def mfa_controller(db: Session = Depends(get_db)) -> MfaController:
-    return MfaController()
+@route.post('/create')
+async def create(mfa: MfaSchema):
+    try:
+        return mfa_controller.create(mfa)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(400, detail=str(e))
 
 @route.get('/code/{id}')
-async def get_code(
-    id: int,
-    mfa_controller: MfaController = Depends(mfa_controller)
-):
+async def get_code(id: int):
     try:
         return mfa_controller.get_code(id)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(400, detail=str(e))
+
+@route.post('/authenticate')
+async def authenticate(username: str, code: str):
+    try:
+        return mfa_controller.authenticate(username, code)
     except HTTPException as e:
         raise e
     except Exception as e:
